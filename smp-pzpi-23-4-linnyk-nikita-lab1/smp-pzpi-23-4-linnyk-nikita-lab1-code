@@ -1,0 +1,195 @@
+#!/bin/bash
+
+product_names=(
+    "Молоко пастеризоване"
+    "Хліб чорний"
+    "Сир білий"
+    "Сметана 20%"
+    "Кефір 1%"
+    "Вода газована"
+    "Печиво \"Весна\""
+)
+
+product_prices=(12 9 21 25 19 18 14)
+
+declare -A cart=()
+
+user_name=""
+user_age=0
+
+show_main_menu() {
+    clear
+    echo "################################"
+    echo "# ПРОДОВОЛЬЧИЙ МАГАЗИН \"ВЕСНА\" #"
+    echo "################################"
+    echo "1 Вибрати товари"
+    echo "2 Отримати підсумковий рахунок"
+    echo "3 Налаштувати свій профіль"
+    echo "0 Вийти з програми"
+}
+
+show_products_menu() {
+    clear
+    echo "№  НАЗВА                 ЦІНА"
+    for i in "${!product_names[@]}"; do
+        echo -e "$((i+1))  ${product_names[$i]}\t${product_prices[$i]} грн"  
+    done
+    echo "   -----------"
+    echo "0  ПОВЕРНУТИСЯ"
+}
+
+show_cart() {
+    if [ ${#cart[@]} -eq 0 ]; then
+        echo "КОШИК ПОРОЖНІЙ"
+    else
+        echo "У КОШИКУ:"
+        echo "НАЗВА            КІЛЬКІСТЬ"
+        for item in "${!cart[@]}"; do
+            echo "$item        ${cart[$item]}"
+        done
+    fi
+    echo ""
+}
+
+show_receipt() {
+    clear
+    echo "ПІДСУМКОВИЙ РАХУНОК"
+    echo "-------------------"
+    echo "№  НАЗВА                 ЦІНА  КІЛЬКІСТЬ  ВАРТІСТЬ"
+    
+    local total=0
+    local item_num=1
+    for item in "${!cart[@]}"; do
+        local price=0
+        for i in "${!product_names[@]}"; do
+            if [ "${product_names[$i]}" = "$item" ]; then
+                price=${product_prices[$i]}
+                break
+            fi
+        done
+        
+        local quantity=${cart[$item]}
+        local item_total=$((price * quantity))
+        total=$((total + item_total))
+        
+        echo -e "$item_num  $item\t$price\t$quantity\t\t$item_total"
+        ((item_num++))
+    done
+    
+    echo "----------------------------------------"
+    echo "РАЗОМ ДО CПЛАТИ: $total грн"
+    echo ""
+}
+
+add_to_cart() {
+    local product_num=$1
+    local selected_index=$((product_num-1))
+    local selected_product="${product_names[$selected_index]}"
+    
+    echo "Вибрано: $selected_product"
+    echo -n "Введіть кількість, штук (0 для видалення): "
+    read quantity
+    
+    if [[ "$quantity" =~ ^[0-9]{1,2}$ ]] && [ "$quantity" -le 99 ]; then
+        if [ "$quantity" -eq 0 ]; then
+            # Видалення товару з кошика
+            if [ -n "${cart[$selected_product]}" ]; then
+                unset cart["$selected_product"]
+                clear
+                echo "ВИДАЛЯЮ З КОШИКА"
+                show_cart
+            else
+                clear
+                echo "Товар не знайдено в кошику"
+                show_cart
+            fi
+        else
+            cart[$selected_product]=$quantity
+            clear
+            show_cart
+        fi
+    else
+        echo "ПОМИЛКА! Введіть число від 0 до 99"
+        sleep 1
+        add_to_cart $product_num
+    fi
+}
+
+setup_profile() {
+    clear
+    echo "НАЛАШТУВАННЯ ПРОФІЛЮ"
+    echo "--------------------"
+    
+    while true; do
+        echo -n "Ваше імʼя: "
+        read name
+        
+        if [[ -z "$name" ]]; then
+            echo "ПОМИЛКА: Імʼя не може бути порожнім"
+        elif [[ ! "$name" =~ [[:alpha:]] ]]; then
+            echo "ПОМИЛКА: Імʼя повинно містити хоча б одну літеру"
+        else
+            user_name="$name"
+            break
+        fi
+    done
+    
+    while true; do
+        echo -n "Ваш вік: "
+        read age
+        
+        if [[ ! "$age" =~ ^[0-9]+$ ]]; then
+            echo "ПОМИЛКА: Вік повинен бути числом"
+        elif [[ "$age" -lt 7 || "$age" -gt 150 ]]; then
+            echo "ПОМИЛКА: Вік повинен бути від 7 до 150 років"
+        else
+            user_age="$age"
+            break
+        fi
+    done
+    
+    echo "Профіль оновлено: $user_name, $user_age років"
+    sleep 2
+}
+
+while true; do
+    show_main_menu
+    echo -n "Введіть команду: "
+    read command
+    
+    case $command in
+        1)
+            while true; do
+                show_products_menu
+                show_cart
+                echo -n "Виберіть товар: "
+                read product_num
+                
+                if [[ "$product_num" -eq 0 ]]; then
+                    break
+                elif [[ "$product_num" -ge 1 && "$product_num" -le ${#product_names[@]} ]]; then
+                    add_to_cart $product_num
+                else
+                    echo "ПОМИЛКА! Введіть правильний номер товару"
+                    sleep 1
+                fi
+            done
+            ;;
+        2)
+            show_receipt
+            echo -n "Натисніть будь-яку клавішу для повернення... "
+            read -n 1 -s
+            ;;
+        3)
+            setup_profile
+            ;;
+        0)
+            echo "Дякуємо за візит! До побачення."
+            exit 0
+            ;;
+        *)
+            echo "ПОМИЛКА! Введіть правильну команду"
+            sleep 2
+            ;;
+    esac
+done
