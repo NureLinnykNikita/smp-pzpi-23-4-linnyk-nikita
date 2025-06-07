@@ -1,1 +1,122 @@
+#!/bin/bash
+
+# Аргументи: высота и ширина
+H=$1
+W=$2
+
+# Перевірка кількості аргументів
+if [ $# -ne 2 ]; then
+    echo "Потрібно вказати висоту та ширину!" >&2
+    exit 1
+fi
+
+# Перевірка на додатні значення 
+if [ "$H" -le 0 ] || [ "$W" -le 0 ]; then
+    echo "Висота і ширина мають бути додатні!" >&2
+    exit 2
+fi
+
+# Мінімільні розміри 
+if [ "$H" -lt 8 ] || [ "$W" -lt 7 ]; then
+    echo "ПОМИЛКА: Замалі розміри!" >&2
+    exit 3
+fi
+
+# Різниця між висотою та шириною 
+DIF=$((H - W))
+
+if [ "$DIF" -ne 0 ] && [ "$DIF" -ne 1 ] && [ "$DIF" -ne 2 ]; then
+    echo "ПОМИЛКА: Неприпустиме співвідношення!" >&2
+    exit 4
+fi
+
+# Перевірка парності
+if [ $((H % 2)) -eq 1 ] && [ $((W % 2)) -eq 1 ]; then
+    if [ "$DIF" -eq 0 ]; then
+        echo "ПОМИЛКА: Неможливо побудувати ялинку!" >&2
+        exit 5
+    fi
+fi
+
+if [ $((H % 2)) -eq 0 ] && [ $((W % 2)) -eq 0 ]; then
+    if [ "$DIF" -eq 2 ]; then
+        echo "ПОМИЛКА: Неможливо побудувати ялинку!" >&2
+        exit 6
+    fi
+fi
+
+# Функція малювання рядка
+draw() {
+    local left=$1
+    local count=$2
+    local ch=$3
+
+    i=0
+    while [ $i -lt $left ]; do
+        echo -n " "
+        i=$((i + 1))
+    done
+
+    j=0
+    while [ $j -lt $count ]; do
+        echo -n "$ch"
+        j=$((j + 1))
+    done
+    echo
+}
+
+# Верх ялинки
+TOP_PART=$(((H - 2) / 2))
+MAX_WIDTH=$((W - 2))
+MARK="*"
+
+for ((n = 1; n <= MAX_WIDTH; n += 2)); do
+    left=$(((W - n) / 2))
+    draw $left $n "$MARK"
+
+    if [ "$MARK" = "*" ]; then
+        MARK="#"
+    else
+        MARK="*"
+    fi
+done
+
+# Перемикання символа
+if [ "$MARK" = "*" ]; then
+    MARK="#"
+else
+    MARK="*"
+fi
+
+# Низ ялинки
+for ((n = 3; n <= MAX_WIDTH; n += 2)); do
+    left=$(((W - n) / 2))
+
+    if [ "$MARK" = "*" ]; then
+        MARK="#"
+    else
+        MARK="*"
+    fi
+
+    draw $left $n "$MARK"
+done
+
+# Стовбур
+for i in 1 2; do
+    left=$(((W - 3) / 2))
+    draw $left 3 "#"
+done
+
+# Основа
+if [ $((W % 2)) -eq 0 ]; then
+    W=$((W - 1))
+fi
+
+i=0
+while [ $i -lt $W ]; do
+    echo -n "*"
+    i=$((i + 1))
+done
+echo
+
 
