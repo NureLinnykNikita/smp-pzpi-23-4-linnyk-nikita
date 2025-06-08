@@ -1,1 +1,219 @@
+#!/bin/bash
 
+VERSION="1.0"
+
+GROUP=""
+TIMETABLE=""
+QUIET="false"
+
+for param in "$@"; do
+    if [[ "$param" == "--help" ]]; then
+        echo "Використання: $0 [--help | --version] | [[-q|--quiet] [академ_група] файл_із_cist.csv]"
+        echo "Параметри:"
+        echo "  --help        Показати цe повідомлення і вийти"
+        echo "  --version     Показати версію скрипта"
+        echo "  -q, --quiet   Не виводити розклад у стандартний потік виведення"
+        exit 0
+
+    elif [[ "$param" == "--version" ]]; then
+        echo "$0 версія $VERSION"
+        exit 0
+
+    elif [[ "$param" == "-q" || "$param" == "--quiet" ]]; then
+        QUIET=true
+
+    elif [[ "$param" == *.csv ]]; then
+        TIMETABLE="$param"
+
+    elif [[ "$param" =~ ^ПЗПІ-[0-9]{1,2}-[0-9]+$ ]]; then
+        GROUP="$param"
+    fi
+done
+
+# Вибір файлу, якщо не заданий
+if [[ -z "$TIMETABLE" ]]; then
+    echo "Оберіть файл формату CSV:"
+    files=($(ls TimeTable_??_??_20??.csv | sort))
+
+    select selected in "${files[@]}" "ВИХІД"; do
+        if [[ "$selected" == "ВИХІД" ]]; then
+            exit 1
+        elif [[ -n "$selected" && "$selected" != "ВИХІД" ]]; then
+            TIMETABLE=$selected
+            break
+        else
+            echo "Неправильний вибір, повторіть спробу."
+        fi
+    done
+else
+    if [[ ! -f "$TIMETABLE" ]]; then
+        echo "Файл \"$TIMETABLE\" не знайдено."
+        exit 1
+    fi
+fi
+
+# Підготовка файлу для обробки
+csv_schedule="Google_$TIMETABLE"
+iconv -f WINDOWS-1251 -t UTF-8 "$TIMETABLE" > "$csv_schedule"
+sed -i 's/\r/\n/g' "$csv_schedule"
+
+# Отримання списку груп
+mapfile -t groups < <(
+    sed '1d; s/^" *\([^ ]*\).*$/\1/' "$csv_schedule" |
+    grep '-' |
+    sort -t '-' -k3,3n |
+    uniq
+)
+
+# Вибір групи
+if [[ -z "$GROUP" ]]; then
+    if [[ ${#groups[@]} -eq 0 ]]; then
+        echo "Групи не знайдено."
+        exit 1
+    fi
+
+    groups+=("ЗАВЕРШИТИ")
+
+    echo "Оберіть групу:"
+    while true; do
+        select choice in "${groups[@]}"; do
+            if [[ -z "$choice" ]]; then
+                echo "Неправильний вибір, повторіть спробу."
+                break
+            elif [[ "$choice" == "ВИХІД" ]]; then
+                echo "Вихід із програми."
+                exit 0
+            else
+                GROUP="$choice"
+                break 2
+            fi
+        done
+    done
+elif ! printf "%s\n" "${groups[@]}" | grep -qx "$GROUP"; then
+    echo "Групу '$GROUP' не знайдено у файлі. Доступні для вибору:"
+    mapfile -t groups < <(sed '1d; s/^" *\([^ ]*\).*$/\1/' "$csv_schedule" | grep '-' | sort -t '-' -k3,3n | uniq)
+    
+    if [[ ${#groups[@]} -eq 0 ]]; then
+        echo "Групи не знайдено."
+        exit 1
+    fi
+
+    groups+=("ВИХІД")
+
+    echo "Оберіть групу:"
+    while true; do
+        select choice in "${groups[@]}"; do
+            if [[ -z "$choice" ]]; then
+                echo "Неправильний вибір, повторіть спробу."
+                break
+            elif [[ "$choice" == "ВИХІД" ]]; then
+                echo "Вихід із програми."
+                exit 0
+            else
+                GROUP="$choice"
+                break 2
+            fi
+        done
+    done
+fi
+
+# Сортування за датою
+awk -F '\",\"' '
+{
+    split($2, date, ".")
+    formatted_date = date[3] date[2] date[1]
+    print formatted_date "," $0
+}
+' "$csv_schedule" | sort -t',' -k1,1n | cut -d',' -f2- > temp.csv && mv temp.csv "$csv_schedule"
+
+# Підготовка календарного CSV
+awk -v GROUP="$GROUP" -F '\",\"' '
+BEGIN {
+    print "Subject,Start Date,Start Time,End Date,End Time,Description"
+}
+
+NR > 1 {
+    split($1, arr, "[\" ]")
+
+    if (arr[2] == GROUP || arr[3] != "-") {
+        # Видалення префіксу
+        sub(/^[^ ]+ *- */, "", $1)
+        gsub(/^"+|"+$/, "", $1)
+        full_title = $1
+
+        # Розділення на частини
+        split(full_title, parts, / *; */)
+
+        split($2, start_date, ".")
+        split($4, end_date, ".")
+
+        # Форматування часу
+        split($3, st, ":")
+        hour = st[1]
+        min = st[2]
+        suffix = "AM"
+        if (hour == 0) {
+            hour = 12
+        } else if (hour >= 12) {
+            if (hour > 12) hour -= 12
+            suffix = "PM"
+        }
+        start_time = hour ":" min " " suffix
+
+        split($5, et, ":")
+        hour_end = et[1]
+        min_end = et[2]
+        suffix_end = "AM"
+        if (hour_end == 0) {
+            hour_end = 12
+        } else if (hour_end >= 12) {
+            if (hour_end > 12) hour_end -= 12
+            suffix_end = "PM"
+        }
+        end_time = hour_end ":" min_end " " suffix_end
+
+        description = $12
+        gsub(/^"+|"+$/, "", description)
+
+        delete group_map
+        for (i in parts) {
+            item = parts[i]
+            gsub(/^ +| +$/, "", item)
+            if (item == "") continue
+            match(item, /[A-Za-zА-Яа-яЁёІіЇїЄєҐґЃѓ]+/, m)
+            key = m[0]
+            if (key in group_map) {
+                group_map[key] = group_map[key] ";" item
+            } else {
+                group_map[key] = item
+            }
+        }
+
+        for (k in group_map) {
+            subject = group_map[k]
+
+            if (subject ~ /Лб/) {
+                labsAdded[subject]++
+                lesson_num = int((labsAdded[subject] + 1) / 2)
+            } else {
+                count[subject]++
+                lesson_num = count[subject]
+            }
+
+            subject_with_number = subject " №" lesson_num
+
+            print "\"" subject_with_number "\"," \
+                  "\"" start_date[2] "/" start_date[1] "/" start_date[3] "\"," \
+                  "\"" start_time "\"," \
+                  "\"" end_date[2] "/" end_date[1] "/" end_date[3] "\"," \
+                  "\"" end_time "\"," \
+                  "\"" description "\"," \
+        }
+    }
+}
+' "$csv_schedule" > temp.csv && mv temp.csv "$csv_schedule"
+
+# Вивід результату
+if [[ "$QUIET" != "true" ]]; then
+    cat "$csv_schedule"
+fi
