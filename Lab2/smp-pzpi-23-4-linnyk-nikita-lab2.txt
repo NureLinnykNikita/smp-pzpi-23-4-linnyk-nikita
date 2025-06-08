@@ -1,0 +1,350 @@
+﻿Міністерство освіти і науки України
+Харківський національний університет радіоелектроніки
+Кафедра програмної інженерії
+
+
+
+
+
+
+
+
+ЗВІТ
+з лабораторної роботи №2
+з дисципліни: «Скриптові мови програмування»
+
+
+
+
+
+
+
+
+Виконав
+ст. гр. ПЗПІ-23-4
+Лінник Нікіта Анатолійович
+
+
+
+
+Перевірив
+ст. викладач кафедри ПІ
+Сокорчук Ігор Петрович
+
+
+
+
+
+
+
+
+Харків 2025
+1 ІСТОРІЯ ЗМІН
+№
+	Дата
+	Версія звіту
+	Опис змін та виправлень
+	1
+	20.05.2025
+	1
+	Створено розділ «Завдання»
+	2
+	20.05.2025
+	1
+	Створено розділ «Опис Виконаної роботи»
+	3
+	20.05.2025
+	1
+	Створено розділ «Висновки»
+	4
+	20.05.2025
+	1
+	Створено розділ «Додаток А»
+	5
+	20.05.2025
+	1
+	Створено розділ «Додаток В»
+	
+
+2 ЗАВДАННЯ
+Мета роботи - створити консольну програму «Продовольчий магазин "Весна"», яка імітує роботу магазину в терміналі. Після запуску відображається головне меню. Користувач вводить команди з клавіатури, у разі помилки - виводиться повідомлення і меню з’являється знову. Команда 1 відкриває режим покупок із вибором товарів за номером і кількістю. Команда 3 дозволяє ввести ім’я та вік (ім’я має містити літери, вік - від 7 до 150). Команда 0 завершує роботу програми.
+
+
+3 ОПИС ВИКОНАНОЇ РОБОТИ
+Початкові дані. Створюємо масиви з товарами та їх цінами. Також є порожній кошик ($cart) та змінні для зберігання імені та віку користувача.
+3 $productNames = [
+4     "Молоко пастеризоване",
+5     "Хліб чорний",
+6     "Сир білий",
+7     "Сметана 20%",
+8     "Кефір 1%",
+9     "Вода газована",
+10     "Печиво \"Весна\""
+11 ];
+12
+13 $productPrices = [12, 9, 21, 25, 19, 18, 14];
+14
+15 $cart = [];
+16
+17 $userName = "";
+18 $userAge = 0;
+
+
+Функція головного меню. Функція виводить графічне представлення головного меню. Користувач може обрати одну з чотирьох опцій: обрати товари, переглянути рахунок, налаштувати профіль, вийти.
+20 function showMainMenu() {
+21     echo "\n";
+22     echo "################################\n";
+23     echo "# ПРОДОВОЛЬЧИЙ МАГАЗИН \"ВЕСНА\" #\n";
+24     echo "################################\n";
+25     echo "1 Вибрати товари\n";
+26     echo "2 Отримати підсумковий рахунок\n";
+27     echo "3 Налаштувати свій профіль\n";
+28     echo "0 Вийти з програми\n";
+29 }
+
+
+Допоміжні функції. Ці функції допомагають красиво форматувати вивід в консолі. countCharacters враховує українські літери як один символ (UTF-8), а addPadding заповнює простір до заданої довжини.
+40 function addPadding($value, $targetLength, $fillChar = ' ') {
+41     $currentLength = countCharacters((string)$value);
+42     $padNeeded = max(0, $targetLength - $currentLength);
+43     return $value . str_repeat($fillChar, $padNeeded);
+44 }
+45
+46 function showProductsMenu($productNames, $productPrices) {
+47     echo "\n";
+48     echo addPadding("№", 2) . addPadding("НАЗВА", 22) . addPadding("ЦІНА", 6) . PHP_EOL;
+49
+50     foreach ($productNames as $index => $name) {
+51         echo addPadding($index + 1, 2) .
+52              addPadding($name, 22) .
+53              addPadding($productPrices[$index], 6) . PHP_EOL;
+54     }
+55
+56     echo "   ------------\n";
+57     echo "0  ПОВЕРНУТИСЯ\n";
+58 }
+
+
+Меню товарів. Ця функція виводить список усіх товарів разом з їхніми номерами та цінами у вигляді таблиці. У кінці є кнопка повернення назад ("0").
+46 function showProductsMenu($productNames, $productPrices) {
+47     echo "\n";
+48     echo addPadding("№", 2) . addPadding("НАЗВА", 22) . addPadding("ЦІНА", 6) . PHP_EOL;
+49
+50     foreach ($productNames as $index => $name) {
+51         echo addPadding($index + 1, 2) .
+52              addPadding($name, 22) .
+53              addPadding($productPrices[$index], 6) . PHP_EOL;
+54     }
+55
+56     echo "   ------------\n";
+57     echo "0  ПОВЕРНУТИСЯ\n";
+58 }
+
+
+Вивід кошика. Функція показує, які товари додані в кошик. Якщо кошик порожній — повідомляє про це.
+60 function showCart($cart) {
+61     echo "\n";
+62
+63     if (empty($cart)) {
+64         echo "КОШИК ПОРОЖНІЙ\n";
+65     } else {
+66         echo "У КОШИКУ:\n";
+67         echo addPadding("НАЗВА", 22) . addPadding("КІЛЬКІСТЬ", 4) . PHP_EOL;
+68
+69         foreach ($cart as $name => $quantity) {
+70             echo addPadding($name, 22) . addPadding($quantity, 4) . PHP_EOL;
+71         }
+72     }
+73 }
+
+
+У додатку В(підрозділ В.1) надано код з реалізації формування рахунку. Функція обчислює загальну вартість замовлення, виводить деталі кожного товару (назва, ціна, кількість, вартість) та загальну суму.
+
+
+У додатку В(підрозділ В.2) надано код додавання товару в кошик. Функція приймає номер товару, запитує кількість, валідує її та додає товар в кошик. Якщо кількість = 0 — товар видаляється з кошика.
+
+
+Додаток В(підрозділ В.3) містить функцію налаштування профілю. Користувач може ввести своє ім’я та вік. Програма перевіряє правильність вводу (не порожнє, лише літери, числа тощо).
+
+
+Додаток В(підрозділ В.4) містить головний цикл програми, який триває доти, доки користувач не обере "0" (вихід). За допомогою switch обробляються команди:'1' — вибір товарів, '2' — показ рахунку, '3' — налаштування профілю, '0' — вихід, інші значення — помилка.
+
+
+4 ВИСНОВКИ
+У ході лабораторної роботи було розроблено консольну програму на мові PHP під назвою «Продовольчий магазин "Весна"», яка моделює взаємодію користувача з магазином через термінал.
+
+
+ДОДАТОК А
+Відеозапис
+Відеозапис презентації результатів лабораторної роботи: https://youtu.be/UcOF4sJtUZg
+Хронологічний опис відеозапису:
+00:00 - Вступ
+00:09 - Завдання
+00:19 - Огляд програми
+02:05 - Розбір коду
+
+
+ДОДАТОК В
+Програмний код
+В.1 Функція формування рахунку
+GitHub репозиторій: https://github.com/NureLinnykNikita/smp-pzpi-23-4-linnyk-nikita/blob/main/Lab2/smp-pzpi-23-4-linnyk-nikita-lab2/smp-pzpi-23-4-linnyk-nikita-lab2-code
+75 function showReceipt($cart, $productNames, $productPrices) {
+76     if (empty($cart)) {
+77         echo "\nКОШИК ПОРОЖНІЙ\n";
+78         return;
+79     }
+80
+81     echo "\n";
+82     echo "ПІДСУМКОВИЙ РАХУНОК\n";
+83
+84     // Заголовок таблиці
+85     echo addPadding("№", 2) .
+86          addPadding("НАЗВА", 22) .
+87          addPadding("ЦІНА", 5) .
+88          addPadding("КІЛЬКІСТЬ", 10) .
+89          addPadding("ВАРТІСТЬ", 9) . PHP_EOL;
+90
+91     $total = 0;
+92     $itemNum = 1;
+93
+94     foreach ($cart as $name => $quantity) {
+95         $price = 0;
+96         foreach ($productNames as $i => $productName) {
+97             if ($productName === $name) {
+98                 $price = $productPrices[$i];
+99                 break;
+100             }
+101         }
+102
+103         $itemTotal = $price * $quantity;
+104         $total += $itemTotal;
+105
+106         echo addPadding($itemNum++, 2) .
+107              addPadding($name, 22) .
+108              addPadding($price, 5) .
+109              addPadding($quantity, 10) .
+110              addPadding($itemTotal, 9) . PHP_EOL;
+111     }
+112
+113     echo "РАЗОМ ДО CПЛАТИ: $total грн\n";
+114 }
+
+
+В.2 Функція додавання товару в кошик
+GitHub репозиторій: https://github.com/NureLinnykNikita/smp-pzpi-23-4-linnyk-nikita/blob/main/Lab2/smp-pzpi-23-4-linnyk-nikita-lab2/smp-pzpi-23-4-linnyk-nikita-lab2-code
+116 function addToCart(&$cart, $productNum, $productNames) {
+117     $selectedIndex = $productNum - 1;
+118     $selectedProduct = $productNames[$selectedIndex];
+119
+120     echo "\n";
+121     echo "Вибрано: $selectedProduct\n";
+122     echo "Введіть кількість, штук: ";
+123     $quantity = trim(fgets(STDIN));
+124
+125     if (!is_numeric($quantity) || $quantity < 0 || $quantity > 99) {
+126         echo "\n";
+127         echo "ПОМИЛКА! Введіть число від 0 до 99\n";
+128         addToCart($cart, $productNum, $productNames);
+129         return;
+130     }
+131
+132     $quantity = (int)$quantity;
+133
+134     if ($quantity === 0) {
+135         if (isset($cart[$selectedProduct])) {
+136             unset($cart[$selectedProduct]);
+137             echo "\n";
+138             echo "ВИДАЛЯЮ З КОШИКА\n";
+139         } else {
+140             echo "\n";
+141             echo "Товар не знайдено в кошику\n";
+142         }
+143     } else {
+144         $cart[$selectedProduct] = $quantity;
+145     }
+146
+147     showCart($cart);
+148 }
+
+
+В.3 Функція налаштування профілю
+GitHub репозиторій: https://github.com/NureLinnykNikita/smp-pzpi-23-4-linnyk-nikita/blob/main/Lab2/smp-pzpi-23-4-linnyk-nikita-lab2/smp-pzpi-23-4-linnyk-nikita-lab2-code
+150 function setupProfile(&$userName, &$userAge) {
+151     while (true) {
+152         echo "Ваше імʼя: ";
+153         $name = trim(fgets(STDIN));
+154
+155         if (empty($name)) {
+156             echo "ПОМИЛКА: Імʼя не може бути порожнім\n";
+157         } elseif (!preg_match("/[a-zA-Zа-яА-ЯіїєґІЇЄҐ' ]+/u", $name)) {
+158             echo "ПОМИЛКА: Імʼя повинно містити хоча б одну літеру\n";
+159         } else {
+160             $userName = $name;
+161             break;
+162         }
+163     }
+164
+165     while (true) {
+166         echo "Ваш вік: ";
+167         $age = trim(fgets(STDIN));
+168
+169         if (!is_numeric($age)) {
+170             echo "ПОМИЛКА: Вік повинен бути числом\n";
+171         } elseif ((int)$age < 7 || (int)$age > 150) {
+172             echo "ПОМИЛКА: Вік повинен бути від 7 до 150 років\n";
+173         } else {
+174             $userAge = (int)$age;
+175             break;
+176         }
+177     }
+178 }
+
+
+В.4 Головний цикл програми
+GitHub репозиторій: https://github.com/NureLinnykNikita/smp-pzpi-23-4-linnyk-nikita/blob/main/Lab2/smp-pzpi-23-4-linnyk-nikita-lab2/smp-pzpi-23-4-linnyk-nikita-lab2-code
+180 while (true) {
+181     showMainMenu();
+182     echo "Введіть команду: ";
+183     $command = trim(fgets(STDIN));
+184
+185     switch ($command) {
+186         case '1':
+187             while (true) {
+188                 showProductsMenu($productNames, $productPrices);
+189
+190                 echo "Виберіть товар: ";
+191                 $productNum = trim(fgets(STDIN));
+192
+193                 if ($productNum == 0) {
+194                     break;
+195                 } elseif (is_numeric($productNum) && $productNum >= 1 && $productNum <= count($productNames)) {
+196                     addToCart($cart, (int)$productNum, $productNames);
+197                 } else {
+198                     echo "\n";
+199                     echo "ПОМИЛКА! Введіть правильний номер товару\n";
+200                     sleep(1);
+201                 }
+202             }
+203             break;
+204
+205         case '2':
+206             showReceipt($cart, $productNames, $productPrices);
+207             break;
+208
+209         case '3':
+210             setupProfile($userName, $userAge);
+211             break;
+212
+213         case '0':
+214             echo "\n";
+215             echo "Дякуємо за візит! До побачення.\n";
+216             exit(0);
+217             break;
+218
+219         default:
+220             echo "\n";
+221             echo "ПОМИЛКА! Введіть правильну команду\n";
+222             sleep(2);
+223             break;
+224     }
+225 }
