@@ -1,195 +1,226 @@
-#!/bin/bash
+<?php
 
-product_names=(
-    "Молоко пастеризоване"
-    "Хліб чорний"
-    "Сир білий"
-    "Сметана 20%"
-    "Кефір 1%"
-    "Вода газована"
+$productNames = [
+    "Молоко пастеризоване",
+    "Хліб чорний",
+    "Сир білий",
+    "Сметана 20%",
+    "Кефір 1%",
+    "Вода газована",
     "Печиво \"Весна\""
-)
+];
 
-product_prices=(12 9 21 25 19 18 14)
+$productPrices = [12, 9, 21, 25, 19, 18, 14];
 
-declare -A cart=()
+$cart = [];
 
-user_name=""
-user_age=0
+$userName = "";
+$userAge = 0;
 
-show_main_menu() {
-    clear
-    echo "################################"
-    echo "# ПРОДОВОЛЬЧИЙ МАГАЗИН \"ВЕСНА\" #"
-    echo "################################"
-    echo "1 Вибрати товари"
-    echo "2 Отримати підсумковий рахунок"
-    echo "3 Налаштувати свій профіль"
-    echo "0 Вийти з програми"
+function showMainMenu() {
+    echo "\n";
+    echo "################################\n";
+    echo "# ПРОДОВОЛЬЧИЙ МАГАЗИН \"ВЕСНА\" #\n";
+    echo "################################\n";
+    echo "1 Вибрати товари\n";
+    echo "2 Отримати підсумковий рахунок\n";
+    echo "3 Налаштувати свій профіль\n";
+    echo "0 Вийти з програми\n";
 }
 
-show_products_menu() {
-    clear
-    echo "№  НАЗВА                 ЦІНА"
-    for i in "${!product_names[@]}"; do
-        echo -e "$((i+1))  ${product_names[$i]}\t${product_prices[$i]} грн"  
-    done
-    echo "   -----------"
-    echo "0  ПОВЕРНУТИСЯ"
+function countCharacters($text) {
+    $total = 0;
+    preg_match_all("/./u", $text, $symbols);
+    if (!empty($symbols[0])) {
+        $total = count($symbols[0]);
+    }
+    return $total;
 }
 
-show_cart() {
-    if [ ${#cart[@]} -eq 0 ]; then
-        echo "КОШИК ПОРОЖНІЙ"
-    else
-        echo "У КОШИКУ:"
-        echo "НАЗВА            КІЛЬКІСТЬ"
-        for item in "${!cart[@]}"; do
-            echo "$item        ${cart[$item]}"
-        done
-    fi
-    echo ""
+function addPadding($value, $targetLength, $fillChar = ' ') {
+    $currentLength = countCharacters((string)$value);
+    $padNeeded = max(0, $targetLength - $currentLength);
+    return $value . str_repeat($fillChar, $padNeeded);
 }
 
-show_receipt() {
-    clear
-    echo "ПІДСУМКОВИЙ РАХУНОК"
-    echo "-------------------"
-    echo "№  НАЗВА                 ЦІНА  КІЛЬКІСТЬ  ВАРТІСТЬ"
-    
-    local total=0
-    local item_num=1
-    for item in "${!cart[@]}"; do
-        local price=0
-        for i in "${!product_names[@]}"; do
-            if [ "${product_names[$i]}" = "$item" ]; then
-                price=${product_prices[$i]}
-                break
-            fi
-        done
-        
-        local quantity=${cart[$item]}
-        local item_total=$((price * quantity))
-        total=$((total + item_total))
-        
-        echo -e "$item_num  $item\t$price\t$quantity\t\t$item_total"
-        ((item_num++))
-    done
-    
-    echo "----------------------------------------"
-    echo "РАЗОМ ДО CПЛАТИ: $total грн"
-    echo ""
+function showProductsMenu($productNames, $productPrices) {
+    echo "\n";
+    echo addPadding("№", 2) . addPadding("НАЗВА", 22) . addPadding("ЦІНА", 6) . PHP_EOL;
+
+    foreach ($productNames as $index => $name) {
+        echo addPadding($index + 1, 2) .
+             addPadding($name, 22) .
+             addPadding($productPrices[$index], 6) . PHP_EOL;
+    }
+
+    echo "   ------------\n";
+    echo "0  ПОВЕРНУТИСЯ\n";
 }
 
-add_to_cart() {
-    local product_num=$1
-    local selected_index=$((product_num-1))
-    local selected_product="${product_names[$selected_index]}"
-    
-    echo "Вибрано: $selected_product"
-    echo -n "Введіть кількість, штук (0 для видалення): "
-    read quantity
-    
-    if [[ "$quantity" =~ ^[0-9]{1,2}$ ]] && [ "$quantity" -le 99 ]; then
-        if [ "$quantity" -eq 0 ]; then
-            # Видалення товару з кошика
-            if [ -n "${cart[$selected_product]}" ]; then
-                unset cart["$selected_product"]
-                clear
-                echo "ВИДАЛЯЮ З КОШИКА"
-                show_cart
-            else
-                clear
-                echo "Товар не знайдено в кошику"
-                show_cart
-            fi
-        else
-            cart[$selected_product]=$quantity
-            clear
-            show_cart
-        fi
-    else
-        echo "ПОМИЛКА! Введіть число від 0 до 99"
-        sleep 1
-        add_to_cart $product_num
-    fi
+function showCart($cart) {
+    echo "\n";
+
+    if (empty($cart)) {
+        echo "КОШИК ПОРОЖНІЙ\n";
+    } else {
+        echo "У КОШИКУ:\n";
+        echo addPadding("НАЗВА", 22) . addPadding("КІЛЬКІСТЬ", 4) . PHP_EOL;
+
+        foreach ($cart as $name => $quantity) {
+            echo addPadding($name, 22) . addPadding($quantity, 4) . PHP_EOL;
+        }
+    }
 }
 
-setup_profile() {
-    clear
-    echo "НАЛАШТУВАННЯ ПРОФІЛЮ"
-    echo "--------------------"
-    
-    while true; do
-        echo -n "Ваше імʼя: "
-        read name
-        
-        if [[ -z "$name" ]]; then
-            echo "ПОМИЛКА: Імʼя не може бути порожнім"
-        elif [[ ! "$name" =~ [[:alpha:]] ]]; then
-            echo "ПОМИЛКА: Імʼя повинно містити хоча б одну літеру"
-        else
-            user_name="$name"
-            break
-        fi
-    done
-    
-    while true; do
-        echo -n "Ваш вік: "
-        read age
-        
-        if [[ ! "$age" =~ ^[0-9]+$ ]]; then
-            echo "ПОМИЛКА: Вік повинен бути числом"
-        elif [[ "$age" -lt 7 || "$age" -gt 150 ]]; then
-            echo "ПОМИЛКА: Вік повинен бути від 7 до 150 років"
-        else
-            user_age="$age"
-            break
-        fi
-    done
-    
-    echo "Профіль оновлено: $user_name, $user_age років"
-    sleep 2
+function showReceipt($cart, $productNames, $productPrices) {
+    if (empty($cart)) {
+        echo "\nКОШИК ПОРОЖНІЙ\n";
+        return;
+    }
+
+    echo "\n";
+    echo "ПІДСУМКОВИЙ РАХУНОК\n";
+
+    // Заголовок таблиці
+    echo addPadding("№", 2) .
+         addPadding("НАЗВА", 22) .
+         addPadding("ЦІНА", 5) .
+         addPadding("КІЛЬКІСТЬ", 10) .
+         addPadding("ВАРТІСТЬ", 9) . PHP_EOL;
+
+    $total = 0;
+    $itemNum = 1;
+
+    foreach ($cart as $name => $quantity) {
+        $price = 0;
+        foreach ($productNames as $i => $productName) {
+            if ($productName === $name) {
+                $price = $productPrices[$i];
+                break;
+            }
+        }
+
+        $itemTotal = $price * $quantity;
+        $total += $itemTotal;
+
+        echo addPadding($itemNum++, 2) .
+             addPadding($name, 22) .
+             addPadding($price, 5) .
+             addPadding($quantity, 10) .
+             addPadding($itemTotal, 9) . PHP_EOL;
+    }
+
+    echo "РАЗОМ ДО CПЛАТИ: $total грн\n";
 }
 
-while true; do
-    show_main_menu
-    echo -n "Введіть команду: "
-    read command
-    
-    case $command in
-        1)
-            while true; do
-                show_products_menu
-                show_cart
-                echo -n "Виберіть товар: "
-                read product_num
-                
-                if [[ "$product_num" -eq 0 ]]; then
-                    break
-                elif [[ "$product_num" -ge 1 && "$product_num" -le ${#product_names[@]} ]]; then
-                    add_to_cart $product_num
-                else
-                    echo "ПОМИЛКА! Введіть правильний номер товару"
-                    sleep 1
-                fi
-            done
-            ;;
-        2)
-            show_receipt
-            echo -n "Натисніть будь-яку клавішу для повернення... "
-            read -n 1 -s
-            ;;
-        3)
-            setup_profile
-            ;;
-        0)
-            echo "Дякуємо за візит! До побачення."
-            exit 0
-            ;;
-        *)
-            echo "ПОМИЛКА! Введіть правильну команду"
-            sleep 2
-            ;;
-    esac
-done
+function addToCart(&$cart, $productNum, $productNames) {
+    $selectedIndex = $productNum - 1;
+    $selectedProduct = $productNames[$selectedIndex];
+
+    echo "\n";
+    echo "Вибрано: $selectedProduct\n";
+    echo "Введіть кількість, штук: ";
+    $quantity = trim(fgets(STDIN));
+
+    if (!is_numeric($quantity) || $quantity < 0 || $quantity > 99) {
+        echo "\n";
+        echo "ПОМИЛКА! Введіть число від 0 до 99\n";
+        addToCart($cart, $productNum, $productNames);
+        return;
+    }
+
+    $quantity = (int)$quantity;
+
+    if ($quantity === 0) {
+        if (isset($cart[$selectedProduct])) {
+            unset($cart[$selectedProduct]);
+            echo "\n";
+            echo "ВИДАЛЯЮ З КОШИКА\n";
+        } else {
+            echo "\n";
+            echo "Товар не знайдено в кошику\n";
+        }
+    } else {
+        $cart[$selectedProduct] = $quantity;
+    }
+
+    showCart($cart);
+}
+
+function setupProfile(&$userName, &$userAge) {
+    while (true) {
+        echo "Ваше імʼя: ";
+        $name = trim(fgets(STDIN));
+
+        if (empty($name)) {
+            echo "ПОМИЛКА: Імʼя не може бути порожнім\n";
+        } elseif (!preg_match("/[a-zA-Zа-яА-ЯіїєґІЇЄҐ' ]+/u", $name)) {
+            echo "ПОМИЛКА: Імʼя повинно містити хоча б одну літеру\n";
+        } else {
+            $userName = $name;
+            break;
+        }
+    }
+
+    while (true) {
+        echo "Ваш вік: ";
+        $age = trim(fgets(STDIN));
+
+        if (!is_numeric($age)) {
+            echo "ПОМИЛКА: Вік повинен бути числом\n";
+        } elseif ((int)$age < 7 || (int)$age > 150) {
+            echo "ПОМИЛКА: Вік повинен бути від 7 до 150 років\n";
+        } else {
+            $userAge = (int)$age;
+            break;
+        }
+    }
+}
+
+while (true) {
+    showMainMenu();
+    echo "Введіть команду: ";
+    $command = trim(fgets(STDIN));
+
+    switch ($command) {
+        case '1':
+            while (true) {
+                showProductsMenu($productNames, $productPrices);
+
+                echo "Виберіть товар: ";
+                $productNum = trim(fgets(STDIN));
+
+                if ($productNum == 0) {
+                    break;
+                } elseif (is_numeric($productNum) && $productNum >= 1 && $productNum <= count($productNames)) {
+                    addToCart($cart, (int)$productNum, $productNames);
+                } else {
+                    echo "\n";
+                    echo "ПОМИЛКА! Введіть правильний номер товару\n";
+                    sleep(1);
+                }
+            }
+            break;
+
+        case '2':
+            showReceipt($cart, $productNames, $productPrices);
+            break;
+
+        case '3':
+            setupProfile($userName, $userAge);
+            break;
+
+        case '0':
+            echo "\n";
+            echo "Дякуємо за візит! До побачення.\n";
+            exit(0);
+            break;
+
+        default:
+            echo "\n";
+            echo "ПОМИЛКА! Введіть правильну команду\n";
+            sleep(2);
+            break;
+    }
+}
+
