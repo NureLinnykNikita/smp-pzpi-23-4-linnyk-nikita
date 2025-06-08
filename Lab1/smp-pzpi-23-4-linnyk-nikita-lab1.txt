@@ -1,0 +1,326 @@
+﻿Міністерство освіти і науки України
+Харківський національний університет радіоелектроніки
+Кафедра програмної інженерії
+
+
+
+
+
+
+
+
+ЗВІТ
+з лабораторної роботи №1
+з дисципліни: «Скриптові мови програмування»
+
+
+
+
+
+
+
+
+Виконав
+ст. гр. ПЗПІ-23-4
+Лінник Нікіта Анатолійович
+
+
+
+
+Перевірив
+ст. викладач кафедри ПІ
+Сокорчук Ігор Петрович
+
+
+
+
+
+
+
+
+Харків 2025
+1 ІСТОРІЯ ЗМІН
+№
+	Дата
+	Версія звіту
+	Опис змін та виправлень
+	1
+	22.04.2025
+	1
+	Створено розділ «Завдання»
+	2
+	22.04.2025
+	1
+	Створено розділ «Опис Виконаної роботи»
+	3
+	22.04.2025
+	1
+	Створено розділ «Висновки»
+	4
+	22.04.2025
+	1
+	Створено розділ «Додаток А»
+	5
+	22.04.2025
+	1
+	Створено розділ «Додаток В»
+	
+
+2 ЗАВДАННЯ
+Мета роботи — вивчити базові команди Bash для обробки файлів і тексту, навчитися користуватися такими утилітами, як select, ls, awk, sort, uniq, tee, cat, sed, iconv, а також створити Bash-скрипт, який перетворює CSV-файл із розкладом занять у формат, сумісний з імпортом у Google Календар.
+
+
+3 ОПИС ВИКОНАНОЇ РОБОТИ
+Ініціалізація змінних. GROUP - зберігатиме назву групи. TIMETABLE - назва CSV-файлу з розкладом. QUIET - режим без виводу (якщо true, результат не показується в терміналі).
+3 VERSION="1.0"
+4
+5 GROUP=""
+6 TIMETABLE=""
+7 QUIET="false"
+
+
+У додатку В(підрозділ В.1) міститься код обробки аргументів командного рядка. Перевіряються аргументи, які передані скрипту: --help — виводить інструкцію. --version — виводить номер версії. -q або --quiet — активує тихий режим. *.csv — ім’я файлу розкладу. ПЗПІ-... — шаблон назви групи.
+
+
+Реалізація логіки вибору файлу розкладу. Якщо файл не задано, пропонується вибрати з наявних. Інакше перевіряється, чи існує вказаний файл.
+34 if [[ -z "$TIMETABLE" ]]; then
+35     echo "Оберіть файл формату CSV:"
+36     files=($(ls TimeTable_??_??_20??.csv | sort))
+37
+38     select selected in "${files[@]}" "ВИХІД"; do
+39         if [[ "$selected" == "ВИХІД" ]]; then
+40             exit 1
+41         elif [[ -n "$selected" && "$selected" != "ВИХІД" ]]; then
+42             TIMETABLE=$selected
+43             break
+44         else
+45             echo "Неправильний вибір, повторіть спробу."
+46         fi
+47     done
+48 else
+49     if [[ ! -f "$TIMETABLE" ]]; then
+50         echo "Файл \"$TIMETABLE\" не знайдено."
+51         exit 1
+52     fi
+53 fi
+
+
+Конвертація кодування. Створюється новий файл з префіксом Google_. Файл конвертується з Windows-кодування (CP1251) в UTF-8. Видаляються символи \r (переведення каретки).
+56 csv_schedule="Google_$TIMETABLE"
+57 iconv -f WINDOWS-1251 -t UTF-8 "$TIMETABLE" > "$csv_schedule"
+58 sed -i 's/\r/\n/g' "$csv_schedule"
+Отримання списку груп. Зчитуються назви груп з CSV-файлу. Пропускається перший рядок (заголовок). Групи сортуються та видаляються дублікати.
+61 mapfile -t groups < <(
+62     sed '1d; s/^" *\([^ ]*\).*$/\1/' "$csv_schedule" |
+63     grep '-' |
+64     sort -t '-' -k3,3n |
+65     uniq
+66 )
+
+
+У додатку В(підрозділ В.2) міститься код з реалізацією вибору групи або її перевірки. Якщо група не задана - користувачеві пропонується вибір зі списку. Якщо задана - перевіряється, чи є вона в списку. Якщо не знайдено - показується повідомлення та пропонується вибрати зі списку знову.
+
+
+Сортування записів за датою. awk: генерує нову колонку з датою у форматі ррррммдд для сортування. sort: сортує записи за цією колонкою. cut: видаляє додану колонку після сортування.
+121 awk -F '\",\"' '
+122 {
+123     split($2, date, ".")
+124     formatted_date = date[3] date[2] date[1]
+125     print formatted_date "," $0
+126 }
+127 ' "$csv_schedule" | sort -t',' -k1,1n | cut -d',' -f2- > temp.csv && mv temp.csv "$csv_schedule"
+
+
+У додатку В(підрозділ В.3) міститься код з реалізації формування CSV-файлу для Google-календаря. Формується CSV у форматі, який може імпортувати Google Calendar. Перевіряється, чи рядок належить обраній групі. Формується назва заняття, дата, час початку/кінця, опис. Визначається номер заняття (особливо для лабораторних). Кожен запис виводиться у потрібному форматі.
+
+
+Вивід результату. Якщо не активований тихий режим — розклад виводиться в термінал.
+217 if [[ "$QUIET" != "true" ]]; then
+218     cat "$csv_schedule"
+219 fi
+
+
+4 ВИСНОВКИ
+У процесі виконання практичної роботи було вивчено основні Bash-команди для роботи з файлами та текстовою інформацією. Було освоєно використання таких інструментів, як select, ls, awk, sort, uniq, tee, cat, sed, iconv. Крім того, було створено Bash-скрипт, який перетворює CSV-файл з розкладом занять у формат, придатний для імпорту в Google Календар.
+
+
+ДОДАТОК А
+Відеозапис
+Відеозапис презентації результатів лабораторної роботи: https://youtu.be/1zVBPW8ixNk
+Хронологічний опис відеозапису:
+00:00 - Вступ
+00:09 - Завдання
+00:21 - Огляд програми
+04:00 - Розбір коду
+
+
+ДОДАТОК В
+Програмний код
+В.1 Обробка аргументів командного рядка
+GitHub репозиторій: https://github.com/NureLinnykNikita/smp-pzpi-23-4-linnyk-nikita/blob/main/Lab1/smp-pzpi-23-4-linnyk-nikita-lab1/smp-pzpi-23-4-linnyk-nikita-lab1-code
+9 for param in "$@"; do
+10     if [[ "$param" == "--help" ]]; then
+11         echo "Використання: $0 [--help | --version] | [[-q|--quiet] [академ_група] файл_із_cist.csv]"
+12         echo "Параметри:"
+13         echo "  --help        Показати цe повідомлення і вийти"
+14         echo "  --version     Показати версію скрипта"
+15         echo "  -q, --quiet   Не виводити розклад у стандартний потік виведення"
+16         exit 0
+17
+18     elif [[ "$param" == "--version" ]]; then
+19         echo "$0 версія $VERSION"
+20         exit 0
+21
+22     elif [[ "$param" == "-q" || "$param" == "--quiet" ]]; then
+23         QUIET=true
+24
+25     elif [[ "$param" == *.csv ]]; then
+26         TIMETABLE="$param"
+27
+28     elif [[ "$param" =~ ^ПЗПІ-[0-9]{1,2}-[0-9]+$ ]]; then
+29         GROUP="$param"
+30     fi
+31 done
+
+
+В.2 Вибір або перевірка групи
+GitHub репозиторій: https://github.com/NureLinnykNikita/smp-pzpi-23-4-linnyk-nikita/blob/main/Lab1/smp-pzpi-23-4-linnyk-nikita-lab1/smp-pzpi-23-4-linnyk-nikita-lab1-code
+69 if [[ -z "$GROUP" ]]; then
+70     if [[ ${#groups[@]} -eq 0 ]]; then
+71         echo "Групи не знайдено."
+72         exit 1
+73     fi
+74
+75     groups+=("ЗАВЕРШИТИ")
+76
+77     echo "Оберіть групу:"
+78     while true; do
+79         select choice in "${groups[@]}"; do
+80             if [[ -z "$choice" ]]; then
+81                 echo "Неправильний вибір, повторіть спробу."
+82                 break
+83             elif [[ "$choice" == "ВИХІД" ]]; then
+84                 echo "Вихід із програми."
+85                 exit 0
+86             else
+87                 GROUP="$choice"
+88                 break 2
+89             fi
+90         done
+91     done
+92 elif ! printf "%s\n" "${groups[@]}" | grep -qx "$GROUP"; then
+93     echo "Групу '$GROUP' не знайдено у файлі. Доступні для вибору:"
+94     mapfile -t groups < <(sed '1d; s/^" *\([^ ]*\).*$/\1/' "$csv_schedule" | grep '-' | sort -t '-' -k3,3n | uniq)
+95
+96     if [[ ${#groups[@]} -eq 0 ]]; then
+97         echo "Групи не знайдено."
+98         exit 1
+99     fi
+100
+101     groups+=("ВИХІД")
+102
+103     echo "Оберіть групу:"
+104     while true; do
+105         select choice in "${groups[@]}"; do
+106             if [[ -z "$choice" ]]; then
+107                 echo "Неправильний вибір, повторіть спробу."
+108                 break
+109             elif [[ "$choice" == "ВИХІД" ]]; then
+110                 echo "Вихід із програми."
+111                 exit 0
+112             else
+113                 GROUP="$choice"
+114                 break 2
+115             fi
+116         done
+117     done
+118 fi
+
+
+В.3 Формування фінального CSV-файлу
+GitHub репозиторій: https://github.com/NureLinnykNikita/smp-pzpi-23-4-linnyk-nikita/blob/main/Lab1/smp-pzpi-23-4-linnyk-nikita-lab1/smp-pzpi-23-4-linnyk-nikita-lab1-code
+130 awk -v GROUP="$GROUP" -F '\",\"' '
+131 BEGIN {
+132     print "Subject,Start Date,Start Time,End Date,End Time,Description"
+133 }
+134
+135 NR > 1 {
+136     split($1, arr, "[\" ]")
+137
+138     if (arr[2] == GROUP || arr[3] != "-") {
+139         # Видалення префіксу
+140         sub(/^[^ ]+ *- */, "", $1)
+141         gsub(/^"+|"+$/, "", $1)
+142         full_title = $1
+143
+144         # Розділення на частини
+145         split(full_title, parts, / *; */)
+146
+147         split($2, start_date, ".")
+148         split($4, end_date, ".")
+149
+150         # Форматування часу
+151         split($3, st, ":")
+152         hour = st[1]
+153         min = st[2]
+154         suffix = "AM"
+155         if (hour == 0) {
+156             hour = 12
+157         } else if (hour >= 12) {
+158             if (hour > 12) hour -= 12
+159             suffix = "PM"
+160         }
+161         start_time = hour ":" min " " suffix
+162
+163         split($5, et, ":")
+164         hour_end = et[1]
+165         min_end = et[2]
+166         suffix_end = "AM"
+167         if (hour_end == 0) {
+168             hour_end = 12
+169         } else if (hour_end >= 12) {
+170             if (hour_end > 12) hour_end -= 12
+171             suffix_end = "PM"
+172         }
+173         end_time = hour_end ":" min_end " " suffix_end
+174
+175         description = $12
+176         gsub(/^"+|"+$/, "", description)
+177
+178         delete group_map
+179         for (i in parts) {
+180             item = parts[i]
+181             gsub(/^ +| +$/, "", item)
+182             if (item == "") continue
+183             match(item, /[A-Za-zА-Яа-яЁёІіЇїЄєҐґЃѓ]+/, m)
+184             key = m[0]
+185             if (key in group_map) {
+186                 group_map[key] = group_map[key] ";" item
+187             } else {
+188                 group_map[key] = item
+189             }
+190         }
+191
+192         for (k in group_map) {
+193             subject = group_map[k]
+194
+195             if (subject ~ /Лб/) {
+196                 labsAdded[subject]++
+197                 lesson_num = int((labsAdded[subject] + 1) / 2)
+198             } else {
+199                 count[subject]++
+200                 lesson_num = count[subject]
+201             }
+202
+203             subject_with_number = subject " №" lesson_num
+204
+205             print "\"" subject_with_number "\"," \
+206                   "\"" start_date[2] "/" start_date[1] "/" start_date[3] "\"," \
+207                   "\"" start_time "\"," \
+208                   "\"" end_date[2] "/" end_date[1] "/" end_date[3] "\"," \
+209                   "\"" end_time "\"," \
+210                   "\"" description "\"," \
+211         }
+212     }
+213 }
+214 ' "$csv_schedule" > temp.csv && mv temp.csv "$csv_schedule"
