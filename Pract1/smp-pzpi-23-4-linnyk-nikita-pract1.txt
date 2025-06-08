@@ -210,7 +210,7 @@
 ДОДАТОК В
 Програмний код
 В.1 Функція draw
-GitHub репозиторій: 
+GitHub репозиторій: https://github.com/NureLinnykNikita/smp-pzpi-23-4-linnyk-nikita/blob/main/Pract1/smp-pzpi-23-4-linnyk-nikita-pract1/smp-pzpi-23-4-linnyk-nikita-pract1-code
  46 draw() {        
  47     local left=$1
  48     local count=$2
