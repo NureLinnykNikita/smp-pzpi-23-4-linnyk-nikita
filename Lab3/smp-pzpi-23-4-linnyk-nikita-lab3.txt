@@ -1,0 +1,759 @@
+﻿Міністерство освіти і науки України
+Харківський національний університет радіоелектроніки
+Кафедра програмної інженерії
+
+
+
+
+
+
+
+
+ЗВІТ
+з лабораторної роботи №3
+з дисципліни: «Скриптові мови програмування»
+
+
+
+
+
+
+
+
+Виконав
+ст. гр. ПЗПІ-23-4
+Лінник Нікіта Анатолійович
+
+
+
+
+Перевірив
+ст. викладач кафедри ПІ
+Сокорчук Ігор Петрович
+
+
+
+
+
+
+
+
+Харків 2025
+1 ІСТОРІЯ ЗМІН
+№
+	Дата
+	Версія звіту
+	Опис змін та виправлень
+	1
+	25.05.2025
+	1
+	Створено розділ «Завдання»
+	2
+	25.05.2025
+	1
+	Створено розділ «Опис Виконаної роботи»
+	3
+	25.05.2025
+	1
+	Створено розділ «Висновки»
+	4
+	25.05.2025
+	1
+	Створено розділ «Додаток А»
+	5
+	25.05.2025
+	1
+	Створено розділ «Додаток В»
+	
+
+2 ЗАВДАННЯ
+Мета роботи — створити вебсайт інтернет-магазину «Продовольчий магазин "Весна"» з двома сторінками: «Товари» та «Кошик». Кожна сторінка повинна мати шапку, основну частину і підвал. На сторінці товарів користувач обирає кількість і додає товар у кошик через форму (POST-запит), дані зберігаються в сесії. У кошику відображаються вибрані товари, або повідомлення з посиланням, якщо товарів ще немає.
+
+
+3 ОПИС ВИКОНАНОЇ РОБОТИ
+Структура для PHP-сайту у файлы index.php:
+- header.php: шапка;
+- body.php: вміст;
+- footer.php: підвал;
+Таке розділення спрощує повторне використання коду та підтримку сайту.
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Web shop</title>
+</head>
+<body>
+<?php include 'header.php'; ?>
+        <div id="content">
+                <?php include 'body.php'; ?>
+       </div>
+    <?php include 'footer.php'; ?>
+</body>
+</html>
+
+
+У додатку В(підрозділ В.1) надано весь код body.php. Код відповідає за відображення списку товарів магазину та можливості додавання товарів у кошик. Якщо буде введено невалідне значення - буде відпрацьована валідація. Також є обробка POST-запиту, який перевіряє, чи форма була відправлена методом POST. І чи є в запиті масив products (кількість товарів, які вибрав користувач). Після цього формується кошик і йде збереження в сесію та редирект. Якщо в кошику щось є: зберігає масив вибраних товарів у сесію під ключем 'selectedItems'. Робить переадресацію на сторінку basket.php. Якщо користувач нічого не вибрав — знову показує форму з повідомленням.
+
+
+У додатку В(підрозділ В.2) надано весь код basket.php. Цей PHP-код відповідає за відображення кошика товарів у веб-додатку. Спочатку ініціалізується сесія та імпортуються файли. Функція formatPrice форматує ціну з двома десятковими знаками через крапку, наприклад: 23.50. У випадку, якщо кошик не порожній, створюється масив $basketItems, який буде використовуватись для відображення рядків таблиці. Обчислюється загальна сума замовлення в $totalPrice. Перевіряється, чи існує товар із таким ID у масиві $products. Якщо так — додається його у список для виводу: назва, ціна, кількість, підсумкова сума. Далі йде HTML-таблиця відображення, яка виводить кожен товар з кошика у HTML-таблицю. Якщо масив $_SESSION['selectedItems'] порожній, то відображається повідомлення: "Ваш кошик порожній" з кнопкою повернення.
+
+
+Файл remove_item.php відповідає за видалення товару з кошика, якщо на нього надійшов GET-запит із ID товару. 
+<?php
+session_start();
+
+
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['id'])) {
+    $productId = (int)$_GET['id'];
+    
+    if (isset($_SESSION['selectedItems'][$productId])) {
+        unset($_SESSION['selectedItems'][$productId]);
+        echo "1"; 
+        exit;
+    }
+}
+echo "0"; 
+
+
+Файл products.php місить асоціативний масив, який має список товарів.
+<?php
+return [
+    'products' => [
+        1 => ['name' => 'Молоко пастеризоване', 'price' => 12],
+        2 => ['name' => 'Хліб чорний', 'price' => 9],
+        3 => ['name' => 'Сир білий', 'price' => 21],
+        4 => ['name' => 'Сметана 20%', 'price' => 25],
+        5 => ['name' => 'Кефір 1%', 'price' => 19],
+        6 => ['name' => 'Вода газована', 'price' => 18],
+        7 => ['name' => 'Печиво "Весна"', 'price' => 14]
+    ]
+];
+
+
+У підрозділах В.3, В.4, В.5 додатку В містяться коди файлів header.php, footer.php, aboutus.php.
+
+4 ВИСНОВКИ
+У результаті лабораторної роботи було розроблено функціональний вебсайт інтернет-магазину «Продовольчий магазин "Весна"» з використанням мови PHP.
+
+
+ДОДАТОК А
+Відеозапис
+Відеозапис презентації результатів лабораторної роботи: https://youtu.be/WhhlbTCfh8Q
+Хронологічний опис відеозапису:
+00:00 - Вступ
+00:09 - Завдання
+00:20 - Огляд веб-сайту
+02:00 - Розбір коду
+
+
+ДОДАТОК В
+Програмний код
+В.1 body.php
+GitHub репозиторій: https://github.com/NureLinnykNikita/smp-pzpi-23-4-linnyk-nikita/tree/main/Lab3/smp-pzpi-23-4-linnyk-nikita-lab3
+<?php
+session_start();
+require_once 'products.php';
+
+
+function displayForm($products, $errorMsg = '', $submittedData = []) {
+    ?>
+    <!DOCTYPE html>
+    <html lang="uk">
+    <head>
+        <meta charset="UTF-8">
+        <title>Вибір фруктів</title>
+        <style>
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background-color: #f9f9f9;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                margin: 0;
+            }
+            .form-wrapper {
+                background: white;
+                padding: 35px 30px;
+                border-radius: 12px;
+                box-shadow: 0 6px 15px rgba(0,0,0,0.12);
+                width: 320px;
+                text-align: center;
+            }
+            h2 {
+                margin-bottom: 25px;
+                color: #333;
+            }
+            .error-message {
+                color: #e74c3c;
+                margin-bottom: 18px;
+                font-weight: 600;
+            }
+            .item-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin: 12px 0;
+            }
+            input[type="number"] {
+                width: 60px;
+                padding: 6px;
+                border: 1.5px solid #ccc;
+                border-radius: 6px;
+                font-size: 14px;
+                transition: border-color 0.3s;
+            }
+            input[type="number"]:focus {
+                border-color: #27ae60;
+                outline: none;
+            }
+            .price-label {
+                color: #555;
+                font-size: 13px;
+                font-style: italic;
+            }
+            input[type="submit"] {
+                margin-top: 28px;
+                background-color: #27ae60;
+                border: none;
+                padding: 11px 25px;
+                border-radius: 8px;
+                color: white;
+                font-size: 17px;
+                cursor: pointer;
+                font-weight: 600;
+                box-shadow: 0 4px 10px rgba(39, 174, 96, 0.5);
+                transition: background-color 0.3s ease;
+            }
+            input[type="submit"]:hover {
+                background-color: #219150;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="form-wrapper">
+            <h2>Оберіть фрукти</h2>
+            <?php if ($errorMsg): ?>
+                <div class="error-message"><?= htmlspecialchars($errorMsg) ?></div>
+            <?php endif; ?>
+            <form method="post">
+                <?php foreach ($products as $id => $product): 
+                    $val = isset($submittedData[$id]) ? (int)$submittedData[$id] : 0;
+                ?>
+                    <div class="item-row">
+                        <label for="prod_<?= $id ?>"><?= htmlspecialchars($product['name']) ?></label>
+                        <span class="price-label">₴<?= number_format($product['price'], 2, '.', '') ?></span>
+                        <input type="number" 
+                               name="products[<?= $id ?>]" 
+                               id="prod_<?= $id ?>" 
+                               value="<?= $val ?>" 
+                               min="0" />
+                    </div>
+                <?php endforeach; ?>
+                <input type="submit" value="До кошика">
+            </form>
+        </div>
+    </body>
+    </html>
+    <?php
+}
+
+
+$productsConfig = include 'products.php';
+$products = $productsConfig['products'];
+
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['products'])) {
+    $cart = [];
+    foreach ($_POST['products'] as $id => $qty) {
+        $id = (int)$id;
+        $qty = (int)$qty;
+        if ($qty > 0 && isset($products[$id])) {
+            $cart[$id] = $qty;
+        }
+    }
+
+
+    if (count($cart) > 0) {
+        $_SESSION['selectedItems'] = $cart;
+        header('Location: basket.php');
+        exit();
+    } else {
+        displayForm($products, 'Ви не вибрали жодного товару.', $_POST['products']);
+    }
+} else {
+    displayForm($products);
+}
+
+
+В.2 basket.php
+GitHub репозиторій: https://github.com/NureLinnykNikita/smp-pzpi-23-4-linnyk-nikita/tree/main/Lab3/smp-pzpi-23-4-linnyk-nikita-lab3
+<?php 
+include 'header.php';
+session_start();
+
+
+$productsConfig = include 'products.php';
+$products = $productsConfig['products'];
+$selectedItems = $_SESSION['selectedItems'] ?? [];
+
+
+function formatPrice($price) {
+    return number_format($price, 2, '.', '');
+}
+
+
+if (!empty($selectedItems)) {
+    $basketItems = [];
+    $totalPrice = 0.0;
+
+
+    foreach ($selectedItems as $id => $qty) {
+        if (!isset($products[$id])) continue;
+        
+        $product = $products[$id];
+        $sum = $product['price'] * $qty;
+        $totalPrice += $sum;
+
+
+        $basketItems[] = [
+            'id' => $id,
+            'name' => $product['name'],
+            'price' => $product['price'],
+            'quantity' => $qty,
+            'sum' => $sum
+        ];
+    }
+    ?>
+
+
+    <div class="basket-container">
+        <form action="index.php" method="post" class="basket-form">
+            <table class="basket-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Назва</th>
+                        <th>Ціна (₴)</th>
+                        <th>Кількість</th>
+                        <th>Сума (₴)</th>
+                        <th>Видалити</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($basketItems as $item): ?>
+                        <tr id="row_<?= $item['id'] ?>">
+                            <td><?= $item['id'] ?></td>
+                            <td><?= htmlspecialchars($item['name']) ?></td>
+                            <td class="price"><?= formatPrice($item['price']) ?></td>
+                            <td class="quantity"><?= $item['quantity'] ?></td>
+                            <td class="sum"><?= formatPrice($item['sum']) ?></td>
+                            <td>
+                                <button type="button" class="remove-btn" data-id="<?= $item['id'] ?>">Вилучити</button>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="6" class="total-cell">
+                            Сумарна вартість: <span id="totalPrice"><?= formatPrice($totalPrice) ?></span> ₴
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="6" class="checkout-cell">
+                            <input type="submit" name="submit" value="Продовжити покупки" class="btn-submit" />
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </form>
+    </div>
+
+
+    <style>
+        .basket-container {
+            padding: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 80vh;
+            background: #fafafa;
+        }
+        .basket-form {
+            width: 700px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        .basket-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .basket-table th, .basket-table td {
+            border: 1px solid #ddd;
+            padding: 10px 15px;
+            text-align: center;
+        }
+        .basket-table th {
+            background-color: #27ae60;
+            color: white;
+        }
+        .remove-btn {
+            background-color: #e74c3c;
+            border: none;
+            color: white;
+            padding: 7px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.25s ease;
+        }
+        .remove-btn:hover {
+            background-color: #c0392b;
+        }
+        .total-cell {
+            text-align: right;
+            font-weight: 700;
+            font-size: 18px;
+            background-color: #f0f0f0;
+        }
+        .checkout-cell {
+            text-align: center;
+            padding-top: 15px;
+        }
+        .btn-submit {
+            background-color: #27ae60;
+            border: none;
+            color: white;
+            font-size: 17px;
+            padding: 10px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+            box-shadow: 0 4px 10px rgba(39, 174, 96, 0.5);
+            transition: background-color 0.3s ease;
+        }
+        .btn-submit:hover {
+            background-color: #219150;
+        }
+    </style>
+
+
+    <script>
+        document.querySelectorAll('.remove-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                const itemId = button.dataset.id;
+
+
+                fetch(`remove_item.php?id=${itemId}`)
+                    .then(response => {
+                        if (!response.ok) throw new Error('Network error');
+                        return response.text();
+                    })
+                    .then(status => {
+                        if (status === "1") {
+                            document.getElementById(`row_${itemId}`).remove();
+                            
+                            // Recalculate total
+                            let total = 0;
+                            document.querySelectorAll('.sum').forEach(cell => {
+                                total += parseFloat(cell.textContent);
+                            });
+                            document.getElementById('totalPrice').textContent = total.toFixed(2);
+
+
+                            // Empty basket handling
+                            if (!document.querySelector('tbody tr')) {
+                                document.querySelector('.basket-container').innerHTML = `
+                                    <div style="text-align:center; padding: 50px;">
+                                        <p>Ваш кошик порожній.</p>
+                                        <a href="index.php" class="empty-basket-link">Повернутись до покупок</a>
+                                    </div>
+                                `;
+                            }
+                        } else {
+                            alert('Помилка при видаленні товару');
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Error:', err);
+                        alert('Сталася помилка при вилученні товару');
+                    });
+            });
+        });
+    </script>
+
+
+<?php
+} else {
+    ?>
+    <div class="empty-basket">
+        <div class="empty-basket-content">
+            <p>Ваш кошик порожній.</p>
+            <a href="index.php" class="empty-basket-link">Повернутись до покупок</a>
+        </div>
+    </div>
+    
+    <style>
+        .empty-basket {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 80vh;
+        }
+        .empty-basket-content {
+            text-align: center;
+        }
+        .empty-basket-link {
+            display: inline-block;
+            text-decoration: none;
+            background: #27ae60;
+            color: #fff;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-weight: 600;
+            margin-top: 20px;
+            transition: background-color 0.3s;
+        }
+        .empty-basket-link:hover {
+            background-color: #219150;
+        }
+    </style>
+<?php
+}
+
+
+include 'footer.php';
+?>
+
+
+В.3 header.php
+GitHub репозиторій: https://github.com/NureLinnykNikita/smp-pzpi-23-4-linnyk-nikita/tree/main/Lab3/smp-pzpi-23-4-linnyk-nikita-lab3
+<?php
+session_start(); 
+?>
+<style>
+  header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background-color: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    padding: 12px 25px;
+    z-index: 1000;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  }
+
+
+  header.scrolled {
+    background-color: #fefefe;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+
+
+  nav.navbar {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between; /* Розподіл між крайніми елементами */
+    align-items: center;
+  }
+
+
+  .nav-left, .nav-right, .nav-center {
+    display: flex;
+    gap: 25px;
+    align-items: center;
+  }
+
+
+  .nav-center {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%); /* Точне центрування */
+  }
+
+
+  nav.navbar a {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    color: #333;
+    font-weight: 600;
+    font-size: 16px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    transition: background-color 0.25s ease, color 0.25s ease;
+  }
+
+
+  nav.navbar a:hover,
+  nav.navbar a:focus {
+    background-color: #27ae60;
+    color: white;
+    outline: none;
+  }
+
+
+  nav.navbar img {
+    width: 20px;
+    height: 20px;
+    margin-right: 8px;
+    object-fit: contain;
+  }
+
+
+  nav.navbar span.separator {
+    color: #999;
+    user-select: none;
+  }
+
+
+  body {
+    margin-top: 56px;
+  }
+</style>
+
+
+<header>
+  <nav class="navbar" role="navigation" aria-label="Головне меню">
+    <div class="nav-left">
+      <a href="index.php">
+        Головна
+      </a>
+    </div>
+
+
+    <div class="nav-center">
+      <a href="index.php#products">
+        Товари
+      </a>
+    </div>
+
+
+    <div class="nav-right">
+      <a href="basket.php">
+        Кошик
+      </a>
+    </div>
+  </nav>
+</header>
+
+
+В.4 footer.php
+GitHub репозиторій: https://github.com/NureLinnykNikita/smp-pzpi-23-4-linnyk-nikita/tree/main/Lab3/smp-pzpi-23-4-linnyk-nikita-lab3
+<footer class="footer">
+  <nav aria-label="Футер меню">
+    <ul class="footer-nav">
+      <li><a href="index.php">Головна</a></li>
+      <li><a href="index.php#products">Товари</a></li>
+      <li><a href="basket.php">Кошик</a></li>
+      <li><a href="aboutus.php">Про нас</a></li>
+    </ul>
+  </nav>
+</footer>
+
+
+<style>
+  .footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: #f7f7f7;
+    padding: 14px 0;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    z-index: 999;
+  }
+
+
+  .footer-nav {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    justify-content: center;
+    gap: 25px;
+  }
+
+
+  .footer-nav li {
+  }
+
+
+  .footer-nav a {
+    color: #333;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 15px;
+    transition: color 0.25s ease;
+  }
+
+
+  .footer-nav a:hover,
+  .footer-nav a:focus {
+    color: #27ae60;
+    outline: none;
+  }
+
+
+  body {
+    margin-bottom: 50px; 
+  }
+</style>
+
+
+В.5 aboutus.php
+GitHub репозиторій: 
+<?php include 'header.php'; ?>
+
+
+<div class="simple-about">
+    <h1>Про нас</h1>
+    <div class="about-content">
+        <p>Наш фруктовий магазин постачає свіжі та якісні фрукти прямо з ферм. Ми пишаємося тим, що пропонуємо лише натуральні сезонні фрукти без шкідливих добавок.</p>
+        <p>Наша мета - зробити якісні фрукти доступними для кожного. Усі продукти ретельно відбираються перед тим, як потрапити на полиці нашого магазину.</p>
+        <p>Дякуємо, що обираєте нас!</p>
+    </div>
+</div>
+
+
+<style>
+    .simple-about {
+        max-width: 800px;
+        margin: 30px auto;
+        padding: 20px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    .simple-about h1 {
+        color: #27ae60;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    
+    .about-content {
+        background: white;
+        padding: 25px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        line-height: 1.6;
+    }
+    
+    .about-content p {
+        margin-bottom: 15px;
+        color: #333;
+    }
+    
+    .about-content p:last-child {
+        margin-bottom: 0;
+        font-weight: 600;
+        color: #27ae60;
+    }
+</style>
+
+
+<?php include 'footer.php'; ?>
